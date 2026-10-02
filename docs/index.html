@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рабочее место отчётника</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Onest:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper: #F5F7F6;
+  --sheet: #FFFFFF;
+  --ink: #17231F;
+  --muted: #5B6B65;
+  --line: #DCE3E0;
+  --accent: #1D7A55;
+  --accent-soft: #E3F1EA;
+  --cell: #FFF1B8;
+  --cell-ink: #5C4A00;
+  --code-bg: #14201C;
+  --code-ink: #E4EFEA;
+  --display: "Onest", "Golos Text", -apple-system, "Segoe UI", sans-serif;
+  --body: "Golos Text", -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #101715; --sheet: #17211E; --ink: #E6EEEA; --muted: #9AABA4;
+    --line: #2A3833; --accent: #4CC08E; --accent-soft: #1A3329;
+    --cell: #4A3F12; --cell-ink: #FBE7A1; --code-bg: #0A100E; --code-ink: #DDEBE4;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #101715; --sheet: #17211E; --ink: #E6EEEA; --muted: #9AABA4;
+  --line: #2A3833; --accent: #4CC08E; --accent-soft: #1A3329;
+  --cell: #4A3F12; --cell-ink: #FBE7A1; --code-bg: #0A100E; --code-ink: #DDEBE4;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 16px/1.6 var(--body);
+  padding: 0 16px;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 48px 72px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(30px, 6vw, 42px); letter-spacing: -0.01em; }
+h2 { font-size: 22px; }
+p { margin: 0; }
+.lead { font-size: 18px; color: var(--muted); max-width: 62ch; margin-top: 14px; }
+.eyebrow { font: 600 12px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+
+.need { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 28px; }
+.need div { background: var(--sheet); padding: 14px 16px; }
+.need b { display: block; font-family: var(--display); font-size: 15px; }
+.need span { color: var(--muted); font-size: 14px; }
+
+.steps { list-style: none; padding: 0; margin: 44px 0 0; display: grid; gap: 18px; counter-reset: s; }
+.step { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 22px 22px 24px; display: grid; gap: 12px; }
+.step-head { display: flex; gap: 14px; align-items: baseline; }
+.num { counter-increment: s; font: 700 15px/1 var(--mono); color: var(--accent); min-width: 2.2em; }
+.num::before { content: counter(s, decimal-leading-zero); }
+.step-body { display: grid; gap: 12px; padding-left: calc(2.2em + 14px); }
+.step-body ol, .step-body ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.meta { font-size: 14px; color: var(--muted); }
+
+.cmd { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 14px 92px 14px 16px; font: 14px/1.55 var(--mono); overflow-x: auto; white-space: pre; }
+.copy { position: absolute; top: 8px; right: 8px; font: 500 13px var(--body); background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.copy:focus-visible { outline: 2px solid var(--cell); outline-offset: 2px; }
+kbd { font: 13px var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; background: var(--paper); }
+code { font: 14px var(--mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+
+.send { background: var(--cell); color: var(--cell-ink); border-radius: 8px; padding: 12px 14px; font-size: 15px; }
+.send b { font-weight: 600; }
+
+.table-wrap { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; font-weight: 500; }
+
+section.after { margin-top: 56px; display: grid; gap: 14px; }
+.rules { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rules li { padding-left: 18px; position: relative; }
+.rules li::before { content: ""; position: absolute; left: 0; top: .7em; width: 8px; height: 8px; background: var(--accent); border-radius: 2px; }
+.prompt { background: var(--sheet); border: 1px dashed var(--accent); border-radius: 10px; padding: 16px 18px; font-size: 15px; }
+
+@media (max-width: 520px) {
+  .step-body { padding-left: 0; }
+  .step { padding: 18px 16px 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">МосФорум · рабочее место</p>
+  <h1>Рабочее место отчётника</h1>
+  <p class="lead">После этой установки у тебя в редакторе Cursor будет Codex: он читает и правит Excel, Word и PDF, сверяет документы с ТЗ и собирает отчёты. Программировать не нужно, с ним говоришь обычными словами.</p>
+
+  <div class="need">
+    <div><b>Mac</b><span>с паролем администратора</span></div>
+    <div><b>~5 ГБ</b><span>свободного места</span></div>
+    <div><b>30-40 минут</b><span>почти всё время ждёшь загрузки</span></div>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div class="step-head"><span class="num"></span><h2>Поставь Cursor</h2></div>
+      <div class="step-body">
+        <p>Cursor - это окно, в котором будет жить Codex.</p>
+        <ol>
+          <li>Открой <a href="https://cursor.com/download">cursor.com/download</a> и скачай версию для Mac.</li>
+          <li>Открой скачанный файл и перетащи Cursor в папку «Программы».</li>
+          <li>Запусти Cursor. Если попросит войти, хватит бесплатного аккаунта.</li>
+        </ol>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><span class="num"></span><h2>Поставь Codex и войди</h2></div>
+      <div class="step-body">
+        <p>В Cursor открой терминал: меню <b>Terminal → New Terminal</b> (или <kbd>Ctrl</kbd>+<kbd>`</kbd>). Внизу появится панель с мигающим курсором. Вставь туда команду и нажми <kbd>Enter</kbd>:</p>
+        <div class="cmd" id="cmd-codex">curl -fsSL https://chatgpt.com/codex/install.sh | sh</div>
+        <p>Когда закончится, открой новый терминал, набери <code>codex</code> и <kbd>Enter</kbd>. Выбери <b>Sign in with ChatGPT</b> («Войти через ChatGPT») и войди в свой аккаунт с доступом к Codex или аккаунт, выданный организацией.</p>
+        <p class="meta">После входа открой ещё один терминал через <b>Terminal → New Terminal</b>: следующая команда вставляется в обычный терминал, а не в чат Codex.</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><span class="num"></span><h2>Запусти установку программ для документов</h2></div>
+      <div class="step-body">
+        <p>В том же терминале вставь команду и нажми <kbd>Enter</kbd>:</p>
+        <div class="cmd" id="cmd-office">curl -fsSL https://raw.githubusercontent.com/dgyshka/mosforum-codex-office/main/bootstrap-codex-office.sh | bash</div>
+        <ul>
+          <li>Установщик спросит по-русски, подключить ли управление Google Chrome. <b>1 - подключить</b>, <b>2 - пропустить</b>. Это необязательно: для документов браузер не нужен. При согласии Codex будет открывать отдельное окно уже установленного Chrome и работать с сайтами по твоему поручению. Новый браузер не скачивается. В аккаунты сайтов нужно войти самостоятельно. Если Chrome не установлен, этот шаг будет пропущен.</li>
+          <li>Может всплыть окно «Установить инструменты разработчика» - нажми <b>Установить</b>, дождись конца и повтори команду.</li>
+          <li>Когда спросит <b>Password</b>, введи пароль от Mac. Буквы при вводе не видны, так и задумано. Нажми <kbd>Enter</kbd>.</li>
+          <li>Дальше скрипт всё делает сам и печатает, что поставил. Самое долгое - LibreOffice, около гигабайта.</li>
+        </ul>
+        <p>В конце будет «Готово: офисные инструменты проверены, шесть навыков и Superpowers подключены». Если установка остановилась с ошибкой, скопируй её в чат с Codex и напиши «почини», затем повтори команду.</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step-head"><span class="num"></span><h2>Открой рабочую папку и начни</h2></div>
+      <div class="step-body">
+        <ol>
+          <li>Закрой Cursor полностью: <kbd>Cmd</kbd>+<kbd>Q</kbd>. Открой снова, чтобы он увидел новые программы.</li>
+          <li><b>File → Open Workspace from File…</b> → Документы → Отчёты → <b>МосФорум.code-workspace</b>. Это рабочее место создал скрипт.</li>
+          <li>Если Cursor спросит, доверяешь ли ты папке, выбери <b>Yes, I trust the authors</b> («Да, доверяю авторам»). Для автоматического запуска Codex выбери <b>Allow</b> («Разрешить»). Если такого запроса нет: <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> → <b>Tasks: Manage Automatic Tasks in Folder</b> → <b>Allow Automatic Tasks</b>, затем открой рабочее место заново.</li>
+          <li>Терминал Codex развернётся. Если сбоку остался чат Cursor, закрой его крестиком. Если Codex не запустился, открой терминал и выполни <code>bash "$HOME/.codex/office/start.sh"</code>.</li>
+        </ol>
+        <p class="meta">Внизу чата видны модель, папка и оставшийся контекст. Звук подскажет, когда ответ готов или требуется подтверждение. Оформление выбираешь сама.</p>
+        <p class="send">Напиши Дмитрию «всё работает».</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Что встанет</th><th>Зачем</th></tr></thead>
+      <tbody>
+        <tr><td>Cursor</td><td>окно, в котором работаешь с Codex и видишь файлы</td></tr>
+        <tr><td>Codex</td><td>помощник, который читает и правит документы</td></tr>
+        <tr><td>LibreOffice</td><td>Codex пересчитывает в нём формулы Excel и смотрит, как документ выглядит на деле</td></tr>
+        <tr><td>pandoc, poppler, qpdf</td><td>чтение Word, работа со страницами PDF</td></tr>
+        <tr><td>tesseract</td><td>распознавание сканов, в том числе на русском</td></tr>
+        <tr><td>Правила и 6 навыков</td><td>Excel, Word, PDF, презентации, совместное написание текстов, деловые письма</td></tr>
+        <tr><td>Superpowers</td><td>планирование сложной работы и проверка результата</td></tr>
+        <tr><td>Подключение Chrome, по желанию</td><td>Codex открывает сайты и работает с ними по твоему поручению</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="after">
+    <h2>Как работать с Codex</h2>
+    <ul class="rules">
+      <li>Говори обычными словами: какой файл, что с ним сделать, с чем сверить.</li>
+      <li>Файлы из Телеграма и почты лежат в «Загрузках». Codex их найдёт, если назвать файл.</li>
+      <li>Исходник он не перезаписывает: новый вариант сохраняет в «Отчётах» с пометкой «исправлено».</li>
+      <li>Цифры, ФИО и ссылки не выдумывает. Где данных нет, оставит жёлтую ячейку «заполнить».</li>
+      <li>Перед «готово» сам открывает файл и проверяет, что таблица не поехала и формулы считаются.</li>
+      <li>Удаление файлов, отправку наружу и платные сервисы делает только после твоего «да».</li>
+    </ul>
+    <p class="meta">Например, так можно начать первый разговор:</p>
+    <p class="prompt">В Загрузках лежат ТЗ «Описание объекта закупки» и «МЕДИАПЛАН ОБЩИЙ-4». Сверь медиаплан с ТЗ по пунктам: чего не хватает и что оформлено неверно. Потом собери исправленный медиаплан в папке «Отчёты», исходник не трогай.</p>
+    <p class="meta">Вопросы Codex и установщика будут по-русски. На системных кнопках: Allow / Approve - разрешить, Deny / Reject - отказать, Cancel - отменить. Если смысл непонятен, попроси Codex объяснить по-русски.</p>
+    <p class="meta">Не понятно, что он ответил - напиши «объясни проще». Совсем тупик - скриншот Дмитрию.</p>
+  </section>
+</div>
+
+<script>
+document.querySelectorAll('.cmd').forEach(function (box) {
+  var text = box.textContent;
+  var btn = document.createElement('button');
+  btn.className = 'copy'; btn.type = 'button'; btn.textContent = 'Копировать';
+  btn.addEventListener('click', function () {
+    var done = function () { btn.textContent = 'Скопировано'; setTimeout(function () { btn.textContent = 'Копировать'; }, 1600); };
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(box);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      btn.textContent = 'Выделено: Cmd+C';
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+  box.appendChild(btn);
+});
+</script>
+
+</html>
