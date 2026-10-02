@@ -44,11 +44,12 @@ class ExperienceTests(unittest.TestCase):
             exe.chmod(0o755)
             import os
             env = dict(os.environ, HOME=t, PATH=str(fake)+':'+os.environ['PATH'])
-            for args in ['', 'login --device-auth']:
+            for args in ['', '--yolo', 'login --device-auth']:
                 result = subprocess.run(['zsh', '-f', '-c', 'source "$HOME/.zshrc"; codex '+args], env=env, capture_output=True, text=True, check=True)
-                if not args:
+                if args in ('', '--yolo'):
                     self.assertIn(str(home/'Documents/Отчёты'), result.stdout)
                     self.assertIn('mosforum-office', result.stdout)
+                    self.assertEqual('--yolo' in result.stdout.splitlines(), args == '--yolo')
                 else:
                     self.assertNotIn('mosforum-office', result.stdout)
                     self.assertIn('login\n--device-auth', result.stdout)

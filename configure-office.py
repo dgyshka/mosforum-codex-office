@@ -72,12 +72,12 @@ notification_condition = "always"
     (office / 'start.sh').write_text(launcher)
     (office / 'start.sh').chmod(0o755)
 
-    # Only bare `codex` selects the office. CLI subcommands and explicit options
+    # Bare `codex` and exactly `codex --yolo` select the office. Other arguments
     # keep their normal semantics; no global cd or automatic chat on shell startup.
     shell = 'unalias codex 2>/dev/null\n'
     shell += 'function codex() {\n'
-    shell += '  if (( $# == 0 )); then\n'
-    shell += '    (cd ' + shlex.quote(str(reports)) + ' && command codex --profile mosforum-office --cd ' + shlex.quote(str(reports)) + ')\n'
+    shell += '  if (( $# == 0 )) || { (( $# == 1 )) && [[ "$1" == --yolo ]]; }; then\n'
+    shell += '    (cd ' + shlex.quote(str(reports)) + ' && command codex --profile mosforum-office --cd ' + shlex.quote(str(reports)) + ' "$@")\n'
     shell += '  else\n    command codex "$@"\n  fi\n}\n'
     (office / 'shell.zsh').write_text(shell)
     block = start + '\nsource ' + shlex.quote(str(office / 'shell.zsh')) + '\n' + end
