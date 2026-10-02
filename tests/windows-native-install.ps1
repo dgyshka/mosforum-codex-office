@@ -11,7 +11,7 @@ Refresh-OfficePath
 if (-not (Get-Command codex.exe -ErrorAction SilentlyContinue)) { throw 'Official Codex install failed' }
 # Install the optional Chrome connector too, if Chrome is on the runner.
 function global:Read-Host { param([string]$Prompt) return '1' }
-try { & "$PSScriptRoot\..\setup-codex-office.ps1" }
+try { & "$PSScriptRoot\..\setup-codex-office.ps1" -SkipAuthenticatedPluginForCI }
 finally { Remove-Item Function:\Read-Host }
 Invoke-Checked node.exe @("$PSScriptRoot\test_cursor_settings.cjs")
 $settings = Get-Content -Raw (Join-Path $env:APPDATA 'Cursor\User\settings.json') | ConvertFrom-Json

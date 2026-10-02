@@ -1,4 +1,8 @@
 ﻿# Office installation for Windows x64. Run as the ordinary Windows user.
+param([switch]$SkipAuthenticatedPluginForCI)
+if ($SkipAuthenticatedPluginForCI -and $env:GITHUB_ACTIONS -ne 'true') {
+    throw 'Пропуск авторизации разрешён только на одноразовом тестовом компьютере GitHub.'
+}
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
@@ -87,12 +91,16 @@ try {
     $tessdata = Install-OfficeOcrData $codexRoot $tesseract
     [Environment]::SetEnvironmentVariable('TESSDATA_PREFIX',$tessdata,'User'); $env:TESSDATA_PREFIX = $tessdata
     Invoke-Checked $venvPython @((Join-Path $root 'install-codex-profile.py'),'--platform','windows','--documents',$documents)
-    Invoke-Checked $codexExe @('plugin','add','superpowers@openai-curated-remote','--json')
-    $pluginOutput = & $codexExe plugin list --json
-    if ($LASTEXITCODE -ne 0) { throw 'Не удалось проверить Superpowers.' }
-    $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
-    if (-not ($plugins.installed | Where-Object { $_.name -eq 'superpowers' -and $_.installed -and $_.enabled })) {
-        throw 'Superpowers не включён. Настройка не завершена.'
+    if ($SkipAuthenticatedPluginForCI) {
+        Write-Host 'CI: установка Superpowers не проверяется - требуется личный вход в ChatGPT.'
+    } else {
+        Invoke-Checked $codexExe @('plugin','add','superpowers@openai-curated-remote','--json')
+        $pluginOutput = & $codexExe plugin list --json
+        if ($LASTEXITCODE -ne 0) { throw 'Не удалось проверить Superpowers.' }
+        $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
+        if (-not ($plugins.installed | Where-Object { $_.name -eq 'superpowers' -and $_.installed -and $_.enabled })) {
+            throw 'Superpowers не включён. Настройка не завершена.'
+        }
     }
     $chrome = $null
     if ($browserRequested) {
@@ -121,7 +129,11 @@ try {
         }
     }
     Invoke-Checked $venvPython @((Join-Path $root 'verify-office-windows.py'))
-    Write-Host "`nГотово: офисные программы проверены, шесть навыков и Superpowers подключены."
+    if ($SkipAuthenticatedPluginForCI) {
+        Write-Host "`nCI: офисные программы проверены; подключение Superpowers требует отдельной проверки с авторизацией."
+    } else {
+        Write-Host "`nГотово: офисные программы проверены, шесть навыков и Superpowers подключены."
+    }
     Write-Host 'Закройте Cursor полностью и откройте снова. В новом терминале PowerShell введите codex.'
     Write-Host 'При первом запуске Codex может запросить настройку защиты Windows и подтверждение администратора.'
 } catch {
