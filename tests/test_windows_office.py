@@ -11,6 +11,35 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 
 class WindowsOfficeTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'requires native Windows PowerShell')
+    def test_powershell_routes_default_yolo_and_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "User O'Brien"
+            docs = home / 'OneDrive' / 'Документы'
+            home.mkdir()
+            fake = home / 'fake-codex.ps1'
+            fake.write_text("@{cwd=(Get-Location).Path; arguments=@($args)} | ConvertTo-Json | Set-Content -Encoding UTF8 $env:OFFICE_TEST_CAPTURE\n", encoding='utf-8-sig')
+            subprocess.run([sys.executable, str(ROOT/'configure-office-windows.py'),
+                '--home',str(home),'--documents',str(docs),'--codex',str(fake)],check=True,capture_output=True)
+            capture = home/'capture.json'
+            quote = lambda p: "'" + str(p).replace("'", "''") + "'"
+            for arguments in ['', '--yolo', 'login --device-auth', 'resume --all']:
+                runner = home/'run.ps1'
+                runner.write_text("$ErrorActionPreference='Stop'\n. " + quote(home/'.codex/office/shell.ps1') +
+                    '\n$before=(Get-Location).Path\ncodex ' + arguments +
+                    '\nif ((Get-Location).Path -ne $before) { throw "Location not restored" }\n',encoding='utf-8-sig')
+                result = subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(runner)],
+                    env=dict(os.environ,OFFICE_TEST_CAPTURE=str(capture)),capture_output=True)
+                self.assertEqual(result.returncode,0,result.stderr)
+                recorded = json.loads(capture.read_text(encoding='utf-8-sig'))
+                if arguments in ['', '--yolo']:
+                    expected = ['--profile','mosforum-office','--cd',str(docs/'Отчёты')]
+                    if arguments: expected.append('--yolo')
+                    self.assertEqual(recorded['arguments'],expected)
+                    self.assertEqual(Path(recorded['cwd']), docs/'Отчёты')
+                else:
+                    self.assertEqual(recorded['arguments'],arguments.split())
+
     def test_profiles_preserve_personal_settings_and_chrome_choice(self):
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "User O'Brien"

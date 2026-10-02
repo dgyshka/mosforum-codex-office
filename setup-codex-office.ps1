@@ -118,7 +118,10 @@ try {
     Invoke-Checked $venvPython $configure
     # Local generated PowerShell profiles need RemoteSigned. Never override Group Policy.
     if ((Get-ExecutionPolicy -Scope CurrentUser) -in @('Undefined','Restricted','AllSigned')) {
-        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force -ErrorAction SilentlyContinue
+        if ((Get-ExecutionPolicy -Scope CurrentUser) -ne 'RemoteSigned') {
+            throw 'Не удалось разрешить загрузку локального профиля PowerShell. Обратитесь к Дарье.'
+        }
     }
     Invoke-Checked $venvPython @((Join-Path $root 'verify-office-windows.py'))
     Write-Host "`nГотово: офисные программы проверены, шесть навыков и Superpowers подключены."

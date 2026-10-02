@@ -6,7 +6,8 @@ function Invoke-Checked {
 }
 
 function Refresh-OfficePath {
-    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+    $allPaths = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path
+    $env:Path = (($allPaths -split ';' | Where-Object { $_ } | Select-Object -Unique) -join ';')
 }
 
 function Add-OfficeUserPath {
@@ -51,7 +52,7 @@ function Ensure-OfficePackage {
     & winget list --id $Id --exact --source winget --accept-source-agreements --disable-interactivity *> $null
     if ($LASTEXITCODE -eq 0) { Write-Host "$Label уже установлен."; return }
     Write-Host "Устанавливаю $Label..."
-    & winget install --id $Id --exact --source winget --architecture x64 --accept-package-agreements --accept-source-agreements --disable-interactivity
+    & winget install --id $Id --exact --source winget --architecture x64 --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
     if ($LASTEXITCODE -eq 3010) { throw 'Нужна перезагрузка Windows. Перезагрузите компьютер и повторите команду установки.' }
     if ($LASTEXITCODE -ne 0) { throw "Не удалось установить $Label. Код: $LASTEXITCODE. Сохраните текст ошибки и напишите Дарье." }
     Refresh-OfficePath
