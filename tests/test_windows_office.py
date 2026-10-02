@@ -11,6 +11,26 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 
 class WindowsOfficeTests(unittest.TestCase):
+    def test_word_revision_helper_uses_portable_profile_and_reports_timeout(self):
+        scripts = ROOT/'profile/skills/docx/scripts'
+        sys.path.insert(0, str(scripts))
+        try:
+            spec = importlib.util.spec_from_file_location('accept_changes_test', scripts/'accept_changes.py')
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+        finally:
+            sys.path.pop(0)
+        with tempfile.TemporaryDirectory() as folder:
+            source, output = Path(folder)/'source.docx', Path(folder)/'output.docx'
+            source.write_bytes(b'test')
+            with patch.object(module, '_setup_libreoffice_macro', return_value=True), patch.object(module.subprocess, 'run', side_effect=subprocess.TimeoutExpired('soffice',30)) as execute:
+                _, message = module.accept_changes(str(source), str(output))
+            self.assertIn('Error', message)
+            profile_arg = next(a for a in execute.call_args.args[0] if a.startswith('-env:UserInstallation='))
+            self.assertNotIn('file:///tmp/libreoffice_docx_profile',profile_arg)
+            self.assertIn('office-word-',profile_arg)
+            self.assertEqual(source.read_bytes(),b'test')
+
     @unittest.skipUnless(os.name == 'nt', 'requires native Windows PowerShell')
     def test_powershell_routes_default_yolo_and_resume(self):
         with tempfile.TemporaryDirectory() as temp:

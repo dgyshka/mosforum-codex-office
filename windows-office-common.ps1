@@ -57,3 +57,32 @@ function Ensure-OfficePackage {
     if ($LASTEXITCODE -ne 0) { throw "Не удалось установить $Label. Код: $LASTEXITCODE. Сохраните текст ошибки и напишите Дарье." }
     Refresh-OfficePath
 }
+
+function Install-OfficeOcrData {
+    param([string]$CodexRoot, [string]$Tesseract)
+    $destination = Join-Path $CodexRoot 'tools\tessdata'
+    New-Item -ItemType Directory -Path $destination -Force | Out-Null
+    $sources = @(
+        $env:TESSDATA_PREFIX,
+        (Join-Path (Split-Path -Parent $Tesseract) 'tessdata'),
+        (Join-Path $env:ProgramFiles 'Tesseract-OCR\tessdata')
+    )
+    foreach ($source in $sources) {
+        if ($source -and (Test-Path -LiteralPath $source -PathType Container) -and $source -ne $destination) {
+            Get-ChildItem -LiteralPath $source -Filter '*.traineddata' -File | ForEach-Object {
+                $target = Join-Path $destination $_.Name
+                if (-not (Test-Path -LiteralPath $target)) { Copy-Item -LiteralPath $_.FullName -Destination $target }
+            }
+        }
+    }
+    foreach ($lang in @('eng','osd','rus')) {
+        $target = Join-Path $destination "$lang.traineddata"
+        if (-not (Test-Path -LiteralPath $target) -or (Get-Item -LiteralPath $target).Length -lt 1024) {
+            $download = "$target.download-$([guid]::NewGuid().ToString('N'))"
+            Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/$lang.traineddata" -OutFile $download
+            if ((Get-Item -LiteralPath $download).Length -lt 1024) { throw "Не удалось загрузить язык OCR: $lang" }
+            Move-Item -LiteralPath $download -Destination $target -Force
+        }
+    }
+    return $destination
+}

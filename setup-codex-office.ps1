@@ -25,6 +25,9 @@ try {
     $codexExe = $codexCommand.Source
     $documents = [Environment]::GetFolderPath('MyDocuments')
     if (-not $documents) { throw 'Не удалось определить папку «Документы» Windows.' }
+    foreach ($file in @('windows-packages.json','install-codex-profile.py','configure-office-windows.py','configure-cursor-windows.cjs','office-notify-windows.py','verify-office-windows.py','profile\AGENTS.office.md')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $root $file) -PathType Leaf)) { throw "В архиве отсутствует $file. Повторите загрузку установщика." }
+    }
     $packages = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'windows-packages.json') | ConvertFrom-Json
     foreach ($name in @('xlsx','docx','pdf','pptx','doc-coauthoring','internal-comms')) {
         if (-not (Test-Path (Join-Path $root "profile\skills\$name\SKILL.md"))) { throw "Не найден навык $name. Повторите загрузку." }
@@ -79,17 +82,7 @@ try {
     [Environment]::SetEnvironmentVariable('NODE_PATH',$nodeRoot,'User'); $env:NODE_PATH = $nodeRoot
     Add-OfficeUserPath (Split-Path -Parent $codexExe)
     $tesseract = Find-OfficeProgram 'tesseract.exe'
-    $tessdata = Join-Path $codexRoot 'tools\tessdata'
-    New-Item -ItemType Directory -Path $tessdata -Force | Out-Null
-    $sourceTessdata = Join-Path (Split-Path -Parent $tesseract) 'tessdata'
-    foreach ($lang in @('eng','osd')) {
-        $dataFile = Join-Path $sourceTessdata "$lang.traineddata"
-        if (Test-Path -LiteralPath $dataFile) { Copy-Item -LiteralPath $dataFile -Destination $tessdata -Force }
-    }
-    $rusData = Join-Path $tessdata 'rus.traineddata'
-    if (-not (Test-Path -LiteralPath $rusData)) {
-        Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/rus.traineddata' -OutFile $rusData
-    }
+    $tessdata = Install-OfficeOcrData $codexRoot $tesseract
     [Environment]::SetEnvironmentVariable('TESSDATA_PREFIX',$tessdata,'User'); $env:TESSDATA_PREFIX = $tessdata
     Invoke-Checked $venvPython @((Join-Path $root 'install-codex-profile.py'),'--platform','windows','--documents',$documents)
     Invoke-Checked $codexExe @('plugin','add','superpowers@openai-curated-remote','--json')
@@ -116,6 +109,8 @@ try {
     $configure = @((Join-Path $root 'configure-office-windows.py'),'--documents',$documents,'--codex',$codexExe)
     if ($chrome) { $configure += @('--chrome',$chrome,'--node',(Get-Command node.exe -CommandType Application).Source) }
     Invoke-Checked $venvPython $configure
+    $cursorSettings = Join-Path $env:APPDATA 'Cursor\User\settings.json'
+    Invoke-Checked (Get-Command node.exe -CommandType Application).Source @((Join-Path $root 'configure-cursor-windows.cjs'), $cursorSettings, $backup)
     # Local generated PowerShell profiles need RemoteSigned. Never override Group Policy.
     if ((Get-ExecutionPolicy -Scope CurrentUser) -in @('Undefined','Restricted','AllSigned')) {
         Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force -ErrorAction SilentlyContinue

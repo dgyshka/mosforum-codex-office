@@ -11,5 +11,5 @@
     {"id": "UB-Mannheim.TesseractOCR", "tool": "tesseract.exe", "label": "Tesseract"}
   ],
   "python": ["openpyxl", "pandas", "python-docx", "python-pptx", "pypdf", "pdfplumber", "pypdfium2", "reportlab", "pdf2image", "pytesseract", "Pillow", "numpy", "defusedxml", "lxml", "markitdown[all]"],
-  "node": ["docx", "pptxgenjs", "react-icons", "react", "react-dom", "sharp"]
+  "node": ["docx", "pptxgenjs", "react-icons", "react", "react-dom", "sharp", "jsonc-parser"]
 }

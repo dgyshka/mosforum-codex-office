@@ -26,6 +26,8 @@ def verify():
         if not shutil.which(name):
             raise RuntimeError(f'Программа не найдена: {name}')
     from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
     from pptx import Presentation
     from openpyxl import Workbook, load_workbook
     from pypdf import PdfReader
@@ -52,6 +54,26 @@ def verify():
         assert (work/'page.png').stat().st_size > 0
         print('Word, презентации, PDF и просмотр страниц: проверено.')
 
+        tracked = Document()
+        paragraph = tracked.add_paragraph('Проверка ')
+        insertion = OxmlElement('w:ins')
+        insertion.set(qn('w:id'), '1')
+        insertion.set(qn('w:author'), 'Office check')
+        insertion.set(qn('w:date'), '2026-01-01T00:00:00Z')
+        text_run, text_node = OxmlElement('w:r'), OxmlElement('w:t')
+        text_node.text = '42'
+        text_run.append(text_node)
+        insertion.append(text_run)
+        paragraph._p.append(insertion)
+        tracked.save(work/'tracked.docx')
+        run([sys.executable, Path(__file__).parent/'profile/skills/docx/scripts/accept_changes.py',
+             work/'tracked.docx', work/'accepted.docx'])
+        accepted = Document(work/'accepted.docx')
+        assert not accepted._element.xpath('//w:ins')
+        assert '42' in ''.join(p.text for p in accepted.paragraphs)
+        assert Document(work/'tracked.docx')._element.xpath('//w:ins')
+        print('Word: принятие исправлений в копии документа проверено.')
+
         book = Workbook()
         book.active['A1'] = 21
         book.active['A2'] = '=A1*2'
@@ -65,14 +87,16 @@ def verify():
         assert '42' in MarkItDown().convert(str(work/'table.xlsx')).text_content
         print('Excel: формула пересчитана, результат 42 прочитан из файла.')
 
-        assert 'rus' in run(['tesseract', '--list-langs']).split()
+        assert {'rus', 'eng', 'osd'}.issubset(run(['tesseract', '--list-langs']).split())
         font = ImageFont.truetype(str(Path(os.environ.get('WINDIR', 'C:/Windows'))/'Fonts/arial.ttf'), 64)
         picture = Image.new('RGB', (850, 150), 'white')
         ImageDraw.Draw(picture).text((20, 25), 'Проверка 42', font=font, fill='black')
         picture.save(work/'scan.png')
         recognized = run(['tesseract', work/'scan.png', 'stdout', '-l', 'rus', '--psm', '7'])
         assert '42' in recognized and 'проверка' in recognized.lower(), recognized
-        print('Распознавание русского текста: проверено.')
+        english = run(['tesseract', work/'scan.png', 'stdout', '-l', 'eng', '--psm', '7'])
+        assert '42' in english, english
+        print('Распознавание русского текста, английский язык и osd: проверено.')
 
         js = """const fs=require('fs');
 const {Document,Paragraph,Packer}=require('docx');
