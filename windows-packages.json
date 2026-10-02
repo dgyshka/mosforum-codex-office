@@ -1,0 +1,15 @@
+{
+  "winget": [
+    {"id": "Python.Python.3.12", "tool": "python", "label": "Python 3.12"},
+    {"id": "OpenJS.NodeJS.22", "tool": "node.exe", "label": "Node.js 22"},
+    {"id": "Git.Git", "tool": "git.exe", "label": "Git"},
+    {"id": "jqlang.jq", "tool": "jq.exe", "label": "jq"},
+    {"id": "TheDocumentFoundation.LibreOffice", "tool": "soffice.exe", "label": "LibreOffice"},
+    {"id": "JohnMacFarlane.Pandoc", "tool": "pandoc.exe", "label": "Pandoc"},
+    {"id": "oschwartz10612.Poppler", "tool": "pdftoppm.exe", "label": "Poppler"},
+    {"id": "QPDF.QPDF", "tool": "qpdf.exe", "label": "qpdf"},
+    {"id": "UB-Mannheim.TesseractOCR", "tool": "tesseract.exe", "label": "Tesseract"}
+  ],
+  "python": ["openpyxl", "pandas", "python-docx", "python-pptx", "pypdf", "pdfplumber", "pypdfium2", "reportlab", "pdf2image", "pytesseract", "Pillow", "numpy", "defusedxml", "lxml", "markitdown[all]"],
+  "node": ["docx", "pptxgenjs", "react-icons", "react", "react-dom", "sharp"]
+}

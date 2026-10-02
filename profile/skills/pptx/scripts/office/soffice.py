@@ -18,6 +18,7 @@ callers that build their own argv (they must pass -env:UserInstallation too).
 import contextlib
 import os
 import socket
+import sys
 import subprocess
 import tempfile
 from collections.abc import Iterable
@@ -51,6 +52,8 @@ _SHIM_SO = Path(tempfile.gettempdir()) / "lo_socket_shim.so"
 
 
 def _needs_shim() -> bool:
+    if sys.platform != "linux":
+        return False
     try:
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.close()

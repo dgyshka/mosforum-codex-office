@@ -1,10 +1,10 @@
 # Офисное рабочее место с Codex
 
-Установка для macOS: Cursor, Codex, инструменты для Excel, Word, PDF и презентаций, шесть офисных навыков и Superpowers.
+Установка для macOS и Windows x64: Cursor, Codex, инструменты для Excel, Word, PDF и презентаций, шесть офисных навыков и Superpowers.
 
-Пошаговая инструкция: [открыть в браузере](https://dgyshka.github.io/mosforum-codex-office/). Запасной вариант: [HTML-файл](docs/index.html).
+Пошаговые инструкции: [Mac](https://dgyshka.github.io/mosforum-codex-office/) · [Windows](https://dgyshka.github.io/mosforum-codex-office/windows.html). Запасные HTML-файлы: [Mac](docs/index.html) · [Windows](docs/windows.html).
 
-После установки Codex:
+После установки Codex на Mac:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dgyshka/mosforum-codex-office/main/bootstrap-codex-office.sh | bash
@@ -26,3 +26,21 @@ curl -fsSL https://raw.githubusercontent.com/dgyshka/mosforum-codex-office/main/
 python3 -m unittest discover -s tests -v
 bash -n bootstrap-codex-office.sh setup-codex-office.sh install-office-browser.sh
 ```
+
+## Windows
+
+Рекомендуется Windows 11 x64; установщик допускает Windows 10 build 19041+. ARM и 32-битная Windows не поддерживаются этой сборкой. WSL не нужен. Установщик запускается обычным пользователем; отдельные программы и защита Codex могут запросить права администратора.
+
+После пункта 2 инструкции, в PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/dgyshka/mosforum-codex-office/main/bootstrap-codex-office.ps1 | iex"
+```
+
+Шесть навыков со всеми вспомогательными файлами и офисные правила берутся из той же папки `profile`, что и на Mac. Superpowers подключается из официального каталога. Версии программ и библиотек адаптированы для Windows; форматы документов совпадают. Пользовательские документы, история чатов, память и авторизация между компьютерами не переносятся.
+
+Установщик добавляет обратимый блок в профили Windows PowerShell и PowerShell, сохраняет предыдущие настройки в `~/.codex/backups` и при необходимости разрешает локальные профили через RemoteSigned для текущего пользователя. Политику организации он не меняет. `codex` и ровно `codex --yolo` открывают офисный профиль и «Отчёты» в системной папке «Документы», включая перенаправление в OneDrive. Другие аргументы передаются Codex без изменений.
+
+Звук завершения: системный звук Windows. Сигнал запроса разрешения дополнительно зависит от поддержки звука терминалом. В созданном рабочем месте `МосФорум.code-workspace` звук терминала включён. Цветовую тему установщик не меняет.
+
+Автоматическая проверка `verify-office-windows.py` создаёт временные Word/Excel/PowerPoint, конвертирует документы в PDF, проверяет формулу, русский OCR и Node-библиотеки. Проверки в GitHub Actions не заменяют ручной вход через Device Authorization и первый запуск защиты Codex на компьютере пользователя.

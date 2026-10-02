@@ -1,0 +1,57 @@
+name: Windows office
+on:
+  push:
+    branches: [main, feature/windows-office]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests and PowerShell syntax (5.1)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-ChildItem *.ps1 | ForEach-Object {
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$parseErrors) | Out-Null
+            if ($parseErrors) { throw ($parseErrors | Out-String) }
+          }
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE) { throw 'Unit tests failed' }
+      - name: Native document tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
+            Install-Module Microsoft.WinGet.Client -Force -Scope CurrentUser -Repository PSGallery
+            Repair-WinGetPackageManager -AllUsers
+          }
+          . ./windows-office-common.ps1
+          $manifest = Get-Content windows-packages.json -Raw | ConvertFrom-Json
+          foreach ($pkg in $manifest.winget) {
+            if ($pkg.tool -in @('python','node.exe','git.exe')) { continue }
+            Ensure-OfficePackage $pkg.id $pkg.label
+            $exe = Find-OfficeProgram $pkg.tool
+            if (-not $exe) { throw "Missing $($pkg.tool)" }
+            Add-OfficeUserPath (Split-Path $exe)
+          }
+          Invoke-Checked python (@('-m','pip','install') + @($manifest.python))
+          Invoke-Checked npm.cmd (@('install','-g','--no-audit','--no-fund') + @($manifest.node))
+          $env:NODE_PATH = (& npm.cmd root -g).Trim()
+          $tessdata = Join-Path $env:RUNNER_TEMP 'tessdata'
+          New-Item -ItemType Directory $tessdata | Out-Null
+          Invoke-WebRequest https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/rus.traineddata -OutFile (Join-Path $tessdata 'rus.traineddata')
+          $env:TESSDATA_PREFIX = $tessdata
+          Invoke-Checked python @('verify-office-windows.py')

@@ -1,7 +1,9 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -15,7 +17,7 @@ class ExperienceTests(unittest.TestCase):
             config = home / '.codex/config.toml'
             config.write_text('model = "personal"\n')
             for _ in range(2):
-                p = subprocess.run(['python3', str(ROOT/'configure-office.py'), '--home', t], capture_output=True, text=True)
+                p = subprocess.run([sys.executable, str(ROOT/'configure-office.py'), '--home', t], capture_output=True, text=True)
                 self.assertEqual(p.returncode, 0, p.stderr)
             self.assertEqual(config.read_text(), 'model = "personal"\n')
             profile = (home/'.codex/mosforum-office.config.toml').read_text()
@@ -26,15 +28,16 @@ class ExperienceTests(unittest.TestCase):
             workspace = json.loads((home/'Documents/Отчёты/МосФорум.code-workspace').read_text())
             self.assertEqual(workspace['settings']['workbench.panel.opensMaximized'], 'always')
             self.assertTrue(list((home/'.codex/backups').glob('experience-*/mosforum-office.config.toml')))
-            subprocess.run(['bash','-n',str(home/'.codex/office/start.sh')],check=True)
+            if os.name != 'nt': subprocess.run(['bash','-n',str(home/'.codex/office/start.sh')],check=True)
 
+    @unittest.skipIf(os.name == "nt", "zsh routing is macOS-specific")
     def test_new_terminal_default_and_login_passthrough(self):
         with tempfile.TemporaryDirectory() as t:
             home = Path(t)
             rc = home / '.zshrc'
             rc.write_text('# personal settings\n')
             for _ in range(2):
-                subprocess.run(['python3', str(ROOT/'configure-office.py'), '--home', t], check=True, capture_output=True)
+                subprocess.run([sys.executable, str(ROOT/'configure-office.py'), '--home', t], check=True, capture_output=True)
             self.assertTrue(rc.read_text().startswith('# personal settings\n'))
             self.assertEqual(rc.read_text().count('# mosforum-office:start'), 1)
             fake = home / 'bin'
@@ -67,12 +70,12 @@ class ExperienceTests(unittest.TestCase):
             binary = Path(t)/'.codex/tools/mosforum-browser/chrome-path.txt'
             binary.parent.mkdir(parents=True)
             binary.write_text('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
-            p = subprocess.run(['python3',str(ROOT/'configure-office.py'),'--home',t,'--browser'],capture_output=True,text=True)
+            p = subprocess.run([sys.executable,str(ROOT/'configure-office.py'),'--home',t,'--browser'],capture_output=True,text=True)
             self.assertEqual(p.returncode,0,p.stderr)
             content = (Path(t)/'.codex/mosforum-office.config.toml').read_text()
             self.assertIn('Google Chrome', content)
             self.assertNotIn('chromium', content)
-            p = subprocess.run(['python3',str(ROOT/'configure-office.py'),'--home',t],capture_output=True,text=True)
+            p = subprocess.run([sys.executable,str(ROOT/'configure-office.py'),'--home',t],capture_output=True,text=True)
             self.assertEqual(p.returncode,0,p.stderr)
             self.assertNotIn('mcp_servers', (Path(t)/'.codex/mosforum-office.config.toml').read_text())
 

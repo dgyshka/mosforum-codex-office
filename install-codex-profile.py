@@ -5,6 +5,7 @@ import datetime
 import os
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 
 NAMES = 'xlsx docx pdf pptx doc-coauthoring internal-comms'.split()
@@ -13,7 +14,7 @@ END = '<!-- mosforum-office:end -->'
 NOTE = '''
 ## Codex compatibility
 
-This skill runs in Codex on the user's Mac. References to Claude describe the
+This skill runs in Codex on the user's computer. References to Claude describe the
 original authoring environment; use available Codex tools and connectors.
 Resolve helper scripts relative to this skill directory. Use local files instead
 of Claude artifacts or sandbox-only paths. Do not claim unavailable tools,
@@ -25,10 +26,16 @@ Follow current user instructions and AGENTS.md. Save outputs as new local files.
 '''
 
 
-def install(home, source):
-    rules = (source / 'AGENTS.office.md').read_text()
+def install(home, source, target_platform=None, documents=None):
+    target_platform = target_platform or ("windows" if sys.platform == "win32" else "macos")
+    rules = (source / 'AGENTS.office.md').read_text(encoding='utf-8')
+    if target_platform == 'windows':
+        rules = rules.replace('этом Mac', 'этом Windows-компьютере').replace('~/.office-python/bin/python3', '~/.office-python/Scripts/python.exe')
+        rules += '\n- На Windows используй PowerShell и Python из ~/.office-python/Scripts/python.exe. Примеры bash из навыков адаптируй к PowerShell; python3 заменяй этим Python.\n'
+    if documents:
+        rules += '\n- Рабочая папка для новых результатов: ' + str(documents / 'Отчёты') + '.\n'
     for name in NAMES:
-        body = (source / 'skills' / name / 'SKILL.md').read_text()
+        body = (source / 'skills' / name / 'SKILL.md').read_text(encoding='utf-8')
         if not body.startswith('---\n') or '\n---\n' not in body[4:]:
             raise ValueError('Invalid skill metadata: ' + name)
     root = home / '.codex'
@@ -37,7 +44,7 @@ def install(home, source):
     for target in [root, agents, root / 'skills'] + [root / 'skills' / n for n in NAMES]:
         if target.is_symlink():
             raise ValueError('Symlink target requires manual review: ' + str(target))
-    previous = agents.read_text() if agents.exists() else ''
+    previous = agents.read_text(encoding='utf-8') if agents.exists() else ''
     if previous.count(START) != previous.count(END) or previous.count(START) > 1:
         raise ValueError('Incomplete or repeated office markers in AGENTS.md')
     block = START + '\n' + rules.rstrip() + '\n' + END
@@ -61,9 +68,9 @@ def install(home, source):
         for name in NAMES:
             shutil.copytree(source / 'skills' / name, stage / name)
             skill = stage / name / 'SKILL.md'
-            body = skill.read_text()
+            body = skill.read_text(encoding='utf-8')
             split = body.index('\n---\n', 4) + len('\n---\n')
-            skill.write_text(body[:split] + NOTE + body[split:])
+            skill.write_text(body[:split] + NOTE + body[split:], encoding='utf-8')
         for name in NAMES:
             target = root / 'skills' / name
             if target.exists():
@@ -71,9 +78,9 @@ def install(home, source):
                 shutil.move(str(target), str(backup / 'skills' / name))
             shutil.move(str(stage / name), str(target))
         temporary = stage / 'AGENTS.md'
-        temporary.write_text(updated)
+        temporary.write_text(updated, encoding='utf-8')
         os.replace(temporary, agents)
-    (home / 'Documents' / 'Отчёты').mkdir(parents=True, exist_ok=True)
+    ((documents or home / 'Documents') / 'Отчёты').mkdir(parents=True, exist_ok=True)
     print('Шесть навыков и офисные правила установлены. Копия прежних файлов: ' + str(backup))
     if (root / 'AGENTS.override.md').exists():
         print('ВНИМАНИЕ: AGENTS.override.md имеет приоритет. Офисные правила из AGENTS.md могут не загружаться.')
@@ -83,5 +90,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--home', type=Path, default=Path.home())
     parser.add_argument('--source', type=Path, default=Path(__file__).resolve().parent / 'profile')
+    parser.add_argument('--platform', choices=['windows', 'macos'])
+    parser.add_argument('--documents', type=Path)
     args = parser.parse_args()
-    install(args.home, args.source)
+    install(args.home, args.source, args.platform, args.documents)
