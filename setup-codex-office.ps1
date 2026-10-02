@@ -75,7 +75,9 @@ try {
         Add-OfficeUserPath (Split-Path -Parent $exe)
     }
     Invoke-Checked $venvPython (@('-m','pip','install','--disable-pip-version-check') + @($packages.python))
-    $npm = (Get-Command npm.cmd -CommandType Application -ErrorAction Stop).Source
+    $npm = Find-OfficeProgram 'npm.cmd'
+    $node = Find-OfficeProgram 'node.exe'
+    if (-not $npm -or -not $node) { throw 'Не найдены Node.js и npm после установки.' }
     Invoke-Checked $npm (@('install','-g','--no-audit','--no-fund') + @($packages.node))
     $nodeRoot = (& $npm root -g | Select-Object -Last 1).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Не удалось определить папку Node-библиотек.' }
@@ -107,10 +109,10 @@ try {
         } else { Write-Host 'Chrome не найден. Подключение пропущено; новый браузер не скачивается.' }
     }
     $configure = @((Join-Path $root 'configure-office-windows.py'),'--documents',$documents,'--codex',$codexExe)
-    if ($chrome) { $configure += @('--chrome',$chrome,'--node',(Get-Command node.exe -CommandType Application).Source) }
+    if ($chrome) { $configure += @('--chrome',$chrome,'--node',$node) }
     Invoke-Checked $venvPython $configure
     $cursorSettings = Join-Path $env:APPDATA 'Cursor\User\settings.json'
-    Invoke-Checked (Get-Command node.exe -CommandType Application).Source @((Join-Path $root 'configure-cursor-windows.cjs'), $cursorSettings, $backup)
+    Invoke-Checked $node @((Join-Path $root 'configure-cursor-windows.cjs'), $cursorSettings, $backup)
     # Local generated PowerShell profiles need RemoteSigned. Never override Group Policy.
     if ((Get-ExecutionPolicy -Scope CurrentUser) -in @('Undefined','Restricted','AllSigned')) {
         Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force -ErrorAction SilentlyContinue
