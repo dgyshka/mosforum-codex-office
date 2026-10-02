@@ -16,15 +16,22 @@ def configure(home, browser=False):
     if browser and not binary_file.is_file():
         raise ValueError('Сначала настройте подключение Chrome: install-office-browser.sh')
     office = root / 'office'
+    rc = Path(os.environ.get('ZDOTDIR') or home) / '.zshrc'
+    start, end = '# mosforum-office:start', '# mosforum-office:end'
+    previous_rc = rc.read_text() if rc.exists() else ''
+    if previous_rc.count(start) != previous_rc.count(end) or previous_rc.count(start) > 1:
+        raise ValueError('Повреждён офисный блок в .zshrc; исправьте его перед повторной установкой.')
+    if start in previous_rc and previous_rc.index(start) > previous_rc.index(end):
+        raise ValueError('Неверный порядок офисных маркеров в .zshrc')
     reports = home / 'Documents' / 'Отчёты'
     profile = root / 'mosforum-office.config.toml'
     workspace = reports / 'МосФорум.code-workspace'
-    for p in [root, office, reports, profile, workspace]:
+    for p in [root, office, reports, profile, workspace, rc]:
         if p.is_symlink():
             raise ValueError('Символическая ссылка требует отдельной проверки: ' + str(p))
     (root / 'backups').mkdir(parents=True, exist_ok=True)
     backup = Path(tempfile.mkdtemp(prefix='experience-', dir=root / 'backups'))
-    for p in [profile, workspace]:
+    for p in [profile, workspace, rc]:
         if p.exists():
             shutil.copy2(p, backup / p.name)
     if office.exists():
@@ -64,6 +71,23 @@ notification_condition = "always"
     launcher += 'exec codex --profile mosforum-office --cd ' + shlex.quote(str(reports)) + ' "$@"\n'
     (office / 'start.sh').write_text(launcher)
     (office / 'start.sh').chmod(0o755)
+
+    # Only bare `codex` selects the office. CLI subcommands and explicit options
+    # keep their normal semantics; no global cd or automatic chat on shell startup.
+    shell = 'unalias codex 2>/dev/null\n'
+    shell += 'function codex() {\n'
+    shell += '  if (( $# == 0 )); then\n'
+    shell += '    (cd ' + shlex.quote(str(reports)) + ' && command codex --profile mosforum-office --cd ' + shlex.quote(str(reports)) + ')\n'
+    shell += '  else\n    command codex "$@"\n  fi\n}\n'
+    (office / 'shell.zsh').write_text(shell)
+    block = start + '\nsource ' + shlex.quote(str(office / 'shell.zsh')) + '\n' + end
+    if start in previous_rc:
+        updated_rc = previous_rc[:previous_rc.index(start)] + block + previous_rc[previous_rc.index(end)+len(end):]
+    else:
+        updated_rc = previous_rc + ('\n' if previous_rc else '') + block + '\n'
+    rc.parent.mkdir(parents=True, exist_ok=True)
+    rc.write_text(updated_rc)
+
     settings = {
         'workbench.panel.opensMaximized': 'always',
         'workbench.startupEditor': 'none',

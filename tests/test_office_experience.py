@@ -28,6 +28,32 @@ class ExperienceTests(unittest.TestCase):
             self.assertTrue(list((home/'.codex/backups').glob('experience-*/mosforum-office.config.toml')))
             subprocess.run(['bash','-n',str(home/'.codex/office/start.sh')],check=True)
 
+    def test_new_terminal_default_and_login_passthrough(self):
+        with tempfile.TemporaryDirectory() as t:
+            home = Path(t)
+            rc = home / '.zshrc'
+            rc.write_text('# personal settings\n')
+            for _ in range(2):
+                subprocess.run(['python3', str(ROOT/'configure-office.py'), '--home', t], check=True, capture_output=True)
+            self.assertTrue(rc.read_text().startswith('# personal settings\n'))
+            self.assertEqual(rc.read_text().count('# mosforum-office:start'), 1)
+            fake = home / 'bin'
+            fake.mkdir()
+            exe = fake / 'codex'
+            exe.write_text('#!/bin/sh\nprintf "%s\\n" "$PWD" "$@"\n')
+            exe.chmod(0o755)
+            import os
+            env = dict(os.environ, HOME=t, PATH=str(fake)+':'+os.environ['PATH'])
+            for args in ['', 'login --device-auth']:
+                result = subprocess.run(['zsh', '-f', '-c', 'source "$HOME/.zshrc"; codex '+args], env=env, capture_output=True, text=True, check=True)
+                if not args:
+                    self.assertIn(str(home/'Documents/Отчёты'), result.stdout)
+                    self.assertIn('mosforum-office', result.stdout)
+                else:
+                    self.assertNotIn('mosforum-office', result.stdout)
+                    self.assertIn('login\n--device-auth', result.stdout)
+            self.assertTrue(list((home/'.codex/backups').glob('experience-*/.zshrc')))
+
     def test_notify_only_expected_event(self):
         spec=importlib.util.spec_from_file_location('notify',ROOT/'office-notify.py')
         module=importlib.util.module_from_spec(spec)
