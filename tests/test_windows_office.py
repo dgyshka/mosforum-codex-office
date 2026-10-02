@@ -36,7 +36,7 @@ class WindowsOfficeTests(unittest.TestCase):
                     expected = ['--profile','mosforum-office','--cd',str(docs/'Отчёты')]
                     if arguments: expected.append('--yolo')
                     self.assertEqual(recorded['arguments'],expected)
-                    self.assertEqual(Path(recorded['cwd']), docs/'Отчёты')
+                    self.assertTrue(Path(recorded['cwd']).samefile(docs/'Отчёты'))
                 else:
                     self.assertEqual(recorded['arguments'],arguments.split())
 
